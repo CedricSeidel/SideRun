@@ -1,41 +1,54 @@
-SideRun distribution (standalone)
+# SideRun v2.2.0
 
-Included files
-- siderun.css — standalone companion stylesheet
-- siderun.js — standalone runtime JavaScript
+Lightweight animated flying border effect for modern web interfaces.
 
-Usage
-1) Copy the files into your project (or reference them from a static server):
+## Installation
 
-   <link rel="stylesheet" href="/path/to/dist/siderun.css" />
-   <script defer src="/path/to/dist/siderun.js"></script>
+```html
+<link rel="stylesheet" href="siderun.css" />
+<script defer src="siderun.js"></script>
+```
 
-2) Markup
-   Add the SideRun host container to your HTML. Example:
+## Quick Start
 
-   <div id="siderun" class="sr-container glass-bg">
-     <div class="site-nav__stroke siderun"></div>
-     <!-- content -->
-   </div>
+```html
+<!-- 1. Add class and stroke container -->
+<div id="my-element" class="siderun">
+  <div class="site-nav__stroke siderun"></div>
+  Your content here...
+</div>
 
-3) Initialize the runtime (optional)
-   The runtime exposes a simple API. Example:
+<!-- 2. Initialize -->
+<script>
+  SideRun.init(document.getElementById('my-element'), {
+    margin: 11,
+    trackPointer: true,
+    ease: 0.08
+  });
+</script>
+```
 
-   <script>
-   document.addEventListener('DOMContentLoaded', function(){
-     if (window.SideRun && document.getElementById('siderun')) {
-       SideRun.init(document.getElementById('siderun'), {
-         radius: 12,
-         tail: 14,
-         margin: 11
-       });
-     }
-   });
-   </script>
+## Options
 
-Tokens & customization
-The visual aspects are controlled via CSS custom properties. Use the tokens documented in `styles/siderun.css` (or in this distribution file) to customize colors, stroke widths, blur amount, and scale.
+| Option | Default | Description |
+|--------|---------|-------------|
+| `margin` | `11` | Offset between element and border |
+| `ease` | `0.1` | Animation smoothness (0.01–0.3) |
+| `trackPointer` | `false` | Follow cursor position |
+| `useAppleRadius` | `false` | Use Apple-style squircle radius |
+| `maxRadius` | `null` | Maximum border radius limit |
+| `pauseOffscreen` | `true` | Pause when not visible |
 
-License
-MIT — see root LICENSE file for details.
-Copyright (c) 2025 Cedric Seidel
+## CSS Variables
+
+```css
+:root {
+  --sr-stroke-width: 3;
+  --sr-color-runner: rgba(255, 149, 0, 1);
+  --sr-color-border: rgba(255, 149, 0, 0.4);
+}
+```
+
+## License
+
+MIT © 2025 Cedric Seidel

@@ -1,169 +1,70 @@
-/*
- * SideRun (dist) — standalone stylesheet
- * version: 2.0.0
- * License: MIT Copyright (c) 2025 Cedric Seidel
- * This distribution file is self-contained and can be included directly in a project.
- * Copy `dist/siderun.css` and `dist/siderun.js` to your project and include them.
+/*!
+ * SideRun v2.2.0 - Animated flying border effect
+ * @license MIT | @author Cedric Seidel
+ * https://github.com/PVULJVCOB/SideRun
  */
-/* === SIDERUN 3-LAYER EFFECT SYSTEM === */
-/*
-	Modern 3-Layer Architecture:
-	Layer 1 (z-index 0): .sr-backdrop - Blur container (transparent with backdrop blur)
-	Layer 2 (z-index 2): .siderun-border - Border effect container (animated stroke)
-	Layer 3 (z-index 3): Content - Text and interactive elements
-	This ensures proper stacking: blur underneath, border effect in middle, content on top
-*/
 
-/* === SIDERUN EFFECT TOKENS === */
-.sr-container,
-.siderun {
-	/* Scale factor for consistent sizing across all elements */
-	--sr-scale: 1;
+:root {
+  /* Animation */
+  --sr-stroke-width: 3;
+  --sr-tail: 10;
+  --sr-gap: 10;
+  --sr-ease: 0.1;
+  --sr-margin: 11;
+  --sr-max-fps: 60;
   
-	/* Stroke configuration */
-	--sr-stroke-width-base: calc(var(--sr-scale) * 3px);
-	--sr-stroke-width-outer: var(--sr-stroke-width-base);
-	--sr-stroke-width-inner: var(--sr-stroke-width-base);
-	--sr-stroke-width-runner: var(--sr-stroke-width-base);
-	--sr-stroke-width-ghost: var(--sr-stroke-width-base);
-	--sr-stroke-linecap: round;
-  
-	/* Border effect colors */
-	--sr-color-outer: var(--color-accent);
-	--sr-color-inner: #ffffff;
-	--sr-color-runner: var(--color-accent);
-	--sr-color-ghost: #ffffff;
-  
-	/* Border effect opacities */
-	--sr-opacity-outer: 1;
-	--sr-opacity-inner: 1;
-	--sr-opacity-runner: 1;
-	--sr-opacity-ghost: 1;
-  
-	/* Blur layer configuration */
-	--sr-blur-amount: calc(var(--sr-scale) * 10px);
-	--sr-blur-saturation: 140%;
-	--sr-blur-tint: rgba(255, 255, 255, 0.12);
-	--sr-blur-inset: calc(var(--sr-scale) * 1px);
-	--sr-blur-radius: calc(var(--sr-scale) * 6px);
-  
-	/* Animation configuration */
-	--sr-animation-radius: calc(var(--sr-scale) * 8px);
-	--sr-animation-tail: calc(var(--sr-scale) * 10px);
-	--sr-animation-gap: calc(var(--sr-scale) * 10px);
-	--sr-animation-ease: 0.1;
-	--sr-animation-margin: calc(var(--sr-scale) * 11px);
+  /* Colors */
+  --sr-color-runner: rgba(255, 149, 0, 1);
+  --sr-color-border: rgba(255, 149, 0, 0.4);
 }
 
-/* === LAYER 2: BORDER EFFECT CONTAINER === */
-.siderun-border {
-	position: absolute;
-	inset: 0;
-	width: 100%;
-	height: 100%;
-	z-index: var(--sr-z-border, 2);
-	pointer-events: none;
-	will-change: transform, opacity;
+/* Container */
+.sr-injected {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 1;
 }
 
-.siderun-border rect {
-	vector-effect: non-scaling-stroke;
-}
-
-/* Static outer stroke */
-.siderun-border .sr-static-outer {
-	stroke: var(--sr-color-outer);
-	stroke-opacity: var(--sr-opacity-outer);
-	stroke-width: var(--sr-stroke-width-outer);
-	stroke-linecap: var(--sr-stroke-linecap);
-	fill: none;
-}
-
-/* Static inner stroke */
-.siderun-border .sr-static-inner {
-	stroke: var(--sr-color-inner);
-	stroke-opacity: var(--sr-opacity-inner);
-	stroke-width: var(--sr-stroke-width-inner);
-	stroke-linecap: var(--sr-stroke-linecap);
-	fill: none;
-}
-
-/* Animated runner stroke */
-.siderun-border .sr-runner {
-	stroke: var(--sr-color-runner);
-	stroke-opacity: var(--sr-opacity-runner);
-	stroke-width: var(--sr-stroke-width-runner);
-	stroke-linecap: var(--sr-stroke-linecap);
-	fill: none;
-}
-
-/* Animated ghost stroke */
-.siderun-border .sr-runner-ghost {
-	stroke: var(--sr-color-ghost);
-	stroke-opacity: var(--sr-opacity-ghost);
-	stroke-width: var(--sr-stroke-width-ghost);
-	stroke-linecap: var(--sr-stroke-linecap);
-	fill: none;
-}
-
-/* === LAYER 1: BLUR CONTAINER === */
-.sr-backdrop {
-	position: absolute;
-	left: var(--sr-blur-inset);
-	top: var(--sr-blur-inset);
-	width: calc(100% - (var(--sr-blur-inset) * 2));
-	height: calc(100% - (var(--sr-blur-inset) * 2));
-	border-radius: var(--sr-blur-radius);
-	background: var(--sr-blur-tint);
-	backdrop-filter: blur(var(--sr-blur-amount)) saturate(var(--sr-blur-saturation));
-	-webkit-backdrop-filter: blur(var(--sr-blur-amount)) saturate(var(--sr-blur-saturation));
-	pointer-events: none;
-	z-index: var(--sr-z-blur, 0);
-	will-change: transform, opacity;
-}
-
-/* === LAYER 3: CONTENT CONTAINER === */
-.sr-content {
-	position: relative;
-	z-index: var(--sr-z-content, 3);
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 100%;
-	height: 100%;
-}
-
-/* === WRAPPER AND SCALING === */
 .sr-wrapper {
-	position: absolute;
-	inset: calc(-1 * var(--sr-animation-margin));
-	pointer-events: none;
-	will-change: transform;
+  position: absolute;
+  overflow: visible;
+  pointer-events: none;
 }
 
-/* Ensure SVG elements scale properly */
-.site-nav__stroke.siderun svg,
 .siderun-border {
-	width: 100%;
-	height: 100%;
-	overflow: visible;
+  display: block;
+  overflow: visible;
+  pointer-events: none;
 }
 
-/* responsive rules moved to styles/responsive.css */
-.siderun-border,
-.sr-backdrop,
-.sr-wrapper {
-	transform-style: preserve-3d;
-	backface-visibility: hidden;
+/* Strokes */
+.sr-border-top,
+.sr-border-bottom,
+.sr-runner-1,
+.sr-runner-2 {
+  fill: none;
+  stroke-width: var(--sr-stroke-width, 3);
+  stroke-linecap: butt;
+  stroke-linejoin: round;
 }
 
-/* Honor reduced motion preferences */
+.sr-runner-1,
+.sr-runner-2 {
+  stroke: var(--sr-color-runner);
+}
+
+.sr-border-top,
+.sr-border-bottom {
+  stroke: var(--sr-color-border);
+}
+
+/* Accessibility */
 @media (prefers-reduced-motion: reduce) {
-	.siderun-border,
-	.sr-backdrop,
-	.sr-wrapper {
-		transition: none;
-		animation: none;
-	}
+  .sr-runner-1, .sr-runner-2,
+  .sr-border-top, .sr-border-bottom {
+    transition: none !important;
+    animation: none !important;
+  }
 }
-

@@ -1,272 +1,349 @@
-/*! SideRun Runtime (dist) - standalone
- * @version 2.0.0
- * @license MIT Copyright (c) 2025 Cedric Seidel
- * This is a standalone copy of the runtime suitable for distribution. Include
- * `dist/siderun.css` and `dist/siderun.js` in your project to enable the effect.
+/*!
+ * SideRun v2.2.0 - Animated flying border effect
+ * @license MIT | @author Cedric Seidel
+ * https://github.com/PVULJVCOB/SideRun
  */
+
 (function () {
-  // Full runtime copied from `js/siderun.js`
-  // SideRun: animated running border with inner blur backdrop
-  // Public API:
-  //   SideRun.init(hostEl, options?) -> () => void (cleanup)
-  //   - hostEl: element containing a child '.site-nav__stroke.siderun' (or legacy '.nav_stroke.siderun') where SVG/blur is injected
-  //   - options: { radius, tail, gap, ease, hoverAxis, isBottom, isTop, trackPointer, margin }
+  'use strict';
+
   const NS = 'http://www.w3.org/2000/svg';
+  const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
+  const mix = (a, b, t) => a * (1 - t) + b * t;
 
-  // Math helpers
-  function clamp(v, min, max) {
-    return Math.min(Math.max(v, min), max);
-  }
-  function mix(a, b, t) {
-    return a * (1 - t) + b * t;
+  /**
+   * Apple-style squircle radius calculation
+   * Based on iOS design guidelines: radius ≈ width × 0.2237 (continuous corners)
+   */
+  function calcAppleRadius(w, h) {
+    const min = Math.min(w, h);
+    const ratio = 0.2237; // Apple's magic ratio for continuous corners
+    return Math.min(min * ratio, min / 2);
   }
 
-  // internal maps for instance state (avoid mutating host DOM)
+  // State management
   const cleanupMap = new WeakMap();
-  const prevPosMap = new WeakMap();
-  const pointerHandlersMap = new WeakMap();
-  const hostHoverHandlersMap = new WeakMap();
-  // Map host element -> instance API (recalc, cleanup, etc.)
   const instanceMap = new WeakMap();
-  // Guard against concurrent init on the same host's stroke container
   const initInProgress = new WeakSet();
 
-  // Shared RAF manager to drive all instances with a single loop
+  // Shared animation pool
   const RafPool = (() => {
     let rafId = null;
     const callbacks = new Set();
-    function tick() {
-      callbacks.forEach((cb) => {
-        try { cb(); } catch (e) {}
-      });
+    const tick = () => {
+      callbacks.forEach(cb => { try { cb(); } catch (e) {} });
       rafId = requestAnimationFrame(tick);
-    }
+    };
     return {
       add(cb) {
         callbacks.add(cb);
-        if (callbacks.size === 1 && rafId == null) {
-          rafId = requestAnimationFrame(tick);
-        }
+        if (callbacks.size === 1 && !rafId) rafId = requestAnimationFrame(tick);
         return () => {
           callbacks.delete(cb);
-          if (callbacks.size === 0 && rafId != null) {
-            cancelAnimationFrame(rafId);
-            rafId = null;
-          }
+          if (!callbacks.size && rafId) { cancelAnimationFrame(rafId); rafId = null; }
         };
-      },
+      }
     };
   })();
 
-  // Initialize the effect on a host element
   function init(hostEl, options = {}) {
     if (!hostEl) return () => {};
-    const strokeHost = hostEl.querySelector('.site-nav__stroke.siderun, .nav_stroke.siderun');
-    if (!strokeHost) return () => {};
 
-    // Prevent concurrent initialization on the same stroke host
+    // Find stroke container or use host directly
+    let strokeHost = hostEl.querySelector('.site-nav__stroke.siderun, .card__stroke.siderun');
+    if (!strokeHost) strokeHost = hostEl;
+
     if (initInProgress.has(strokeHost)) return () => {};
     initInProgress.add(strokeHost);
 
-    // Avoid destructively clearing host content. If a previous injection exists, cleanup first.
-    const prevInjected = strokeHost.querySelector('.sr-injected');
-    const existingCleanup = cleanupMap.get(strokeHost);
-    if (existingCleanup) {
-      try { existingCleanup(); } catch (e) { /* swallow cleanup errors */ }
-    } else if (prevInjected) {
-      prevInjected.remove();
-    }
+    // Cleanup previous instance
+    const prev = cleanupMap.get(strokeHost);
+    if (prev) try { prev(); } catch (e) {}
 
-    // Read CSS tokens from computed styles
-    function readCSSTokens() {
-      const style = getComputedStyle(hostEl);
-      return {
-        radius: parseFloat(style.getPropertyValue('--sr-animation-radius')) || 8,
-        tail: parseFloat(style.getPropertyValue('--sr-animation-tail')) || 10,
-        gap: parseFloat(style.getPropertyValue('--sr-animation-gap')) || 10,
-        ease: parseFloat(style.getPropertyValue('--sr-animation-ease')) || 0.1,
-        margin: parseFloat(style.getPropertyValue('--sr-animation-margin')) || 11,
-        scale: parseFloat(style.getPropertyValue('--sr-scale')) || 1,
-      };
-    }
+    // Read CSS tokens
+    const cs = getComputedStyle(hostEl);
+    const cssVal = (name, def) => parseFloat(cs.getPropertyValue(name)) || def;
 
-    // Default configuration merged with CSS tokens
-    const cssTokens = readCSSTokens();
-    const defaults = {
-      radius: cssTokens.radius,
-      tail: cssTokens.tail,
-      gap: cssTokens.gap,
-      ease: cssTokens.ease,
-      hoverAxis: 'x',
-      isBottom: false,
-      isTop: false,
+    const cfg = {
+      tail: cssVal('--sr-tail', 10),
+      gap: cssVal('--sr-gap', 10),
+      ease: cssVal('--sr-ease', 0.1),
+      margin: cssVal('--sr-margin', 11),
+      maxFps: cssVal('--sr-max-fps', 60),
       trackPointer: false,
-      margin: cssTokens.margin,
-      scale: cssTokens.scale,
+      useAppleRadius: false,
+      maxRadius: null,
+      pauseOffscreen: true,
+      ...options
     };
-    const cfg = Object.assign({}, defaults, options);
-    if (options.hoverHorizontal === false) cfg.hoverAxis = 'y';
-    // Create container to hold the blur layer and the SVG strokes
+
+    // Create SVG structure
     const injected = document.createElement('div');
     injected.className = 'sr-injected';
-    // mark injected UI as purely decorative for assistive tech
     injected.setAttribute('aria-hidden', 'true');
-    injected.setAttribute('role', 'presentation');
 
     const wrapper = document.createElement('div');
     wrapper.className = 'sr-wrapper';
-    wrapper.style.position = 'absolute';
-    wrapper.style.inset = `-${cfg.margin}px`;
-    wrapper.style.pointerEvents = 'none';
-
-    const blurLayer = document.createElement('div');
-    blurLayer.className = 'sr-backdrop';
+    wrapper.style.cssText = `position:absolute;inset:-${cfg.margin}px;pointer-events:none;overflow:visible`;
 
     const svg = document.createElementNS(NS, 'svg');
     svg.classList.add('siderun-border');
 
-    const srRunner = document.createElementNS(NS, 'rect');
-    srRunner.setAttribute('class', 'sr-runner');
-    const srOuter = document.createElementNS(NS, 'rect');
-    srOuter.setAttribute('class', 'sr-static-outer');
-    const srInner = document.createElementNS(NS, 'rect');
-    srInner.setAttribute('class', 'sr-static-inner');
-    const srGhost = document.createElementNS(NS, 'rect');
-    srGhost.setAttribute('class', 'sr-runner-ghost');
+    const group = document.createElementNS(NS, 'g');
+    const layers = ['sr-border-top', 'sr-runner-1', 'sr-runner-2', 'sr-border-bottom'].map(cls => {
+      const rect = document.createElementNS(NS, 'rect');
+      rect.setAttribute('class', cls);
+      group.appendChild(rect);
+      return rect;
+    });
+    const [borderTop, runner1, runner2, borderBottom] = layers;
 
-    svg.appendChild(srRunner);
-    svg.appendChild(srOuter);
-    svg.appendChild(srInner);
-    svg.appendChild(srGhost);
-    wrapper.appendChild(blurLayer);
+    svg.appendChild(group);
     wrapper.appendChild(svg);
-
-    // If host is not positioned (computed), temporarily set inline position so absolute wrapper positions correctly.
-    const prevInlinePos = strokeHost.style.position;
-    const computedPos = (typeof window !== 'undefined' && window.getComputedStyle) ? window.getComputedStyle(strokeHost).position : '';
-    if (!prevInlinePos && computedPos === 'static') {
-      strokeHost.style.position = 'relative';
-      // use null as marker that we set an inline position that should be cleared
-      prevPosMap.set(strokeHost, null);
-    } else {
-      prevPosMap.set(strokeHost, prevInlinePos);
-    }
-
     injected.appendChild(wrapper);
+
+    // Ensure relative positioning
+    if (getComputedStyle(strokeHost).position === 'static') {
+      strokeHost.style.position = 'relative';
+    }
     strokeHost.appendChild(injected);
 
-    const metrics = {
-      perimeter: 0,
-      arcQuarter: 0,
-      runnerSegment: 0,
-      runnerHead: 0,
-      widthSpan: 0,
-      bases: {
-        primaryStart: 0,
-        primaryEnd: 0,
-        secondaryStart: 0,
-        secondaryEnd: 0,
-        wrap: 0,
-      },
-    };
-
+    // Animation state
+    const metrics = { perimeter: 0, segment: 0, head: 0, widthSpan: 0, bases: {} };
     const state = { hoverX: 0.5, hoverY: 0.5, isHover: false };
     const primary = { target: 0, eased: 0 };
     const secondary = { target: 0, eased: 0 };
-
+    
     let hostRect = hostEl.getBoundingClientRect();
-    // per-instance unregister function from the shared RAF
-    let unregisterFromPool = null;
-    let pmRaf = null; // throttle pointermove updates
-    const prefersReducedMotion =
-      window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    // Disposed flag to guard async callbacks after cleanup
+    let unregister = null;
     let disposed = false;
+    let isInViewport = true;
+    const prefersReducedMotion = matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
-    // Update rectangles geometry and blur layer CSS vars
-    function setGeometry(width, height, radius) {
-      const innerW = Math.max(0, width - 3);
-      const innerH = Math.max(0, height - 3);
-      [srRunner, srOuter, srInner, srGhost].forEach((rect) => {
-        rect.setAttribute('x', '1.5');
-        rect.setAttribute('y', '1.5');
-        rect.setAttribute('width', innerW);
-        rect.setAttribute('height', innerH);
-        rect.setAttribute('rx', radius);
+    function setGeometry(w, h, r) {
+      const stroke = cssVal('--sr-stroke-width', 3);
+      const off = stroke / 2;
+      const iw = Math.max(0, w - stroke);
+      const ih = Math.max(0, h - stroke);
+      layers.forEach(rect => {
+        rect.setAttribute('x', off);
+        rect.setAttribute('y', off);
+        rect.setAttribute('width', iw);
+        rect.setAttribute('height', ih);
+        rect.setAttribute('rx', r);
       });
-      // Sync blur layer size and corner radius via CSS vars (match siderun.css tokens)
-      const inset = 1; // reduce inset so blur reaches closer to the strokes (avoid visible gap)
-      blurLayer.style.setProperty('--sr-blur-inset', `${inset}px`);
-      // Match blur corner radius exactly to the stroke radius
-      blurLayer.style.setProperty('--sr-blur-radius', `${Math.max(0, radius)}px`);
     }
 
-    // Recalculate sizes on host/viewport changes
     function recalc() {
       if (disposed) return;
       hostRect = hostEl.getBoundingClientRect();
-      // Allow CSS to request extra space beyond the host's rect (e.g., dropdowns)
       const cs = getComputedStyle(hostEl);
-      const extraTop = parseFloat(cs.getPropertyValue('--sr-extra-top') || '0') || 0;
-      const extraRight = parseFloat(cs.getPropertyValue('--sr-extra-right') || '0') || 0;
-      const extraBottom = parseFloat(cs.getPropertyValue('--sr-extra-bottom') || '0') || 0;
-      const extraLeft = parseFloat(cs.getPropertyValue('--sr-extra-left') || '0') || 0;
-      const m = Math.max(0, Number(cfg.margin) || 0);
-      const width = Math.max(0, hostRect.width + m * 2 + extraLeft + extraRight);
-      const height = Math.max(0, hostRect.height + m * 2 + extraTop + extraBottom);
-      svg.setAttribute('width', width);
-      svg.setAttribute('height', height);
-      svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
-      // Ensure wrapper matches computed box
-      wrapper.style.width = `${width}px`;
-      wrapper.style.height = `${height}px`;
+      const stroke = parseFloat(cs.getPropertyValue('--sr-stroke-width')) || 3;
+      const m = cfg.margin;
 
-      const innerW = Math.max(0, width - 3);
-      const innerH = Math.max(0, height - 3);
-      const radius = Math.min(cfg.radius, Math.max(0, Math.min(innerW, innerH) / 2));
-      setGeometry(width, height, radius);
+      const w = Math.max(0, hostRect.width + m * 2);
+      const h = Math.max(0, hostRect.height + m * 2);
 
-      // Compute perimeter of rounded rect deterministically to avoid reliance on getTotalLength
-      // Perimeter = 2*(w + h) - 8*r + 2*pi*r  (straight segments plus 4 quarter-circle arcs)
-      const r = radius;
-      let perimeter = 2 * (innerW + innerH) - 8 * r + 2 * Math.PI * r;
-      if (!isFinite(perimeter) || perimeter <= 0) {
-        // fallback to a safe estimate
-        perimeter = Math.max(1, 2 * (innerW + innerH));
+      svg.setAttribute('width', w);
+      svg.setAttribute('height', h);
+      svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+      wrapper.style.width = `${w}px`;
+      wrapper.style.height = `${h}px`;
+
+      const iw = w - stroke;
+      const ih = h - stroke;
+
+      // Calculate radius
+      let r;
+      if (cfg.useAppleRadius) {
+        r = calcAppleRadius(w, h);
+      } else {
+        const cssRadius = parseFloat(cs.getPropertyValue('border-radius')) || 12;
+        r = cssRadius + m; // Concentric offset
       }
-      metrics.perimeter = perimeter;
-      metrics.arcQuarter = 2 * Math.PI * radius * 0.25;
-      metrics.runnerSegment = metrics.arcQuarter + cfg.tail * 2;
-      metrics.runnerHead = metrics.arcQuarter + cfg.tail;
-      metrics.widthSpan = Math.max(0, innerW - radius * 2);
+      if (cfg.maxRadius) r = Math.min(r, cfg.maxRadius);
+      r = Math.min(r, Math.min(iw, ih) / 2);
 
-      metrics.bases.primaryStart = metrics.runnerHead;
-      metrics.bases.primaryEnd = -metrics.widthSpan - metrics.arcQuarter + metrics.runnerHead;
-      metrics.bases.secondaryStart = metrics.runnerHead - perimeter * 0.5;
-      metrics.bases.secondaryEnd =
-        -perimeter * 0.5 - metrics.widthSpan - metrics.arcQuarter + metrics.runnerHead;
-      metrics.bases.wrap = metrics.bases.secondaryEnd + perimeter;
+      setGeometry(w, h, r);
 
-      const defaultPrimary = cfg.isBottom ? metrics.bases.secondaryEnd : metrics.bases.primaryStart;
-      const defaultSecondary = cfg.isTop ? metrics.bases.primaryEnd : metrics.bases.secondaryStart;
-      primary.eased = primary.target = defaultPrimary;
-      secondary.eased = secondary.target = defaultSecondary;
+      // Calculate perimeter
+      const arcQ = Math.PI * r * 0.5;
+      let perim = 2 * (iw + ih) - 8 * r + 2 * Math.PI * r;
+      if (!isFinite(perim) || perim <= 0) perim = 2 * (iw + ih);
 
+      metrics.perimeter = perim;
+      metrics.segment = arcQ + cfg.tail * 2;
+      metrics.head = arcQ + cfg.tail;
+      metrics.widthSpan = Math.max(0, iw - r * 2);
+
+      const b = metrics.bases;
+      b.ps = metrics.head;
+      b.pe = -metrics.widthSpan - arcQ + metrics.head;
+      b.ss = metrics.head - perim * 0.5;
+      b.se = -perim * 0.5 - metrics.widthSpan - arcQ + metrics.head;
+      b.wrap = b.se + perim;
+
+      primary.eased = primary.target = b.ps;
+      secondary.eased = secondary.target = b.ss;
       applyDashes();
     }
 
-    // Update animated dash targets based on hover state and axis
     function updateTargets() {
       if (!metrics.perimeter) return;
+      const b = metrics.bases;
+      if (state.isHover) {
+        const ratio = clamp(state.hoverX, 0, 1);
+        primary.target = mix(b.ps, b.pe, ratio);
+        secondary.target = mix(b.se, b.ss, ratio);
+      } else {
+        primary.target = b.ps;
+        secondary.target = b.ss;
+      }
     }
 
-    // (rest of the runtime follows unchanged — full implementation)
-    // For brevity in this file, assume the remainder of the runtime is present here.
-    // In the actual distribution this file contains the complete implementation.
+    const lastDash = {};
+    function applyDashes() {
+      if (!metrics.perimeter) return;
+      const { perimeter: p, segment: seg } = metrics;
+      const mainGap = Math.max(0, p - seg);
 
+      const set = (el, arr, off, key) => {
+        const a = `${arr}`, o = `${off}`;
+        if (lastDash[key + 'a'] !== a) { el.setAttribute('stroke-dasharray', a); lastDash[key + 'a'] = a; }
+        if (lastDash[key + 'o'] !== o) { el.setAttribute('stroke-dashoffset', o); lastDash[key + 'o'] = o; }
+      };
+
+      set(runner2, `${seg} ${mainGap}`, primary.eased, 'r2');
+      set(runner1, `${seg} ${mainGap}`, secondary.eased, 'r1');
+
+      const tailLen = Math.max(0, -secondary.eased + primary.eased - cfg.gap * 2 - seg);
+      set(borderTop, `${tailLen} ${p - tailLen}`, primary.eased - seg - cfg.gap, 'bt');
+
+      const trailLen = Math.max(0, p + secondary.eased - primary.eased - cfg.gap * 2 - seg);
+      set(borderBottom, `${trailLen} ${p - trailLen}`, secondary.eased - seg - cfg.gap + p * 2, 'bb');
+    }
+
+    let lastFrame = 0;
+    function step() {
+      if (disposed || !isInViewport) return;
+      const now = performance.now();
+      if (now - lastFrame < 1000 / cfg.maxFps) return;
+      lastFrame = now;
+
+      updateTargets();
+      const d1 = Math.abs(primary.target - primary.eased);
+      const d2 = Math.abs(secondary.target - secondary.eased);
+
+      if (!state.isHover && d1 < 0.4 && d2 < 0.4) {
+        primary.eased = primary.target;
+        secondary.eased = secondary.target;
+        applyDashes();
+        return;
+      }
+
+      if (prefersReducedMotion) {
+        primary.eased = primary.target;
+        secondary.eased = secondary.target;
+      } else {
+        primary.eased += (primary.target - primary.eased) * cfg.ease;
+        secondary.eased += (secondary.target - secondary.eased) * cfg.ease;
+      }
+      applyDashes();
+    }
+
+    // Event handlers
+    const updateFromEvent = (e) => {
+      hostRect = hostEl.getBoundingClientRect();
+      state.hoverX = clamp((e.clientX - hostRect.left) / (hostRect.width || 1), 0, 1);
+      state.hoverY = clamp((e.clientY - hostRect.top) / (hostRect.height || 1), 0, 1);
+    };
+
+    const onEnter = (e) => { state.isHover = true; if (cfg.trackPointer) updateFromEvent(e); };
+    const onMove = (e) => { if (cfg.trackPointer) updateFromEvent(e); };
+    const onLeave = () => { state.isHover = false; };
+
+    // Attach events
+    const isTouch = 'ontouchstart' in window;
+    if (cfg.trackPointer && !isTouch) {
+      hostEl.addEventListener('pointerenter', onEnter, { passive: true });
+      hostEl.addEventListener('pointermove', onMove, { passive: true });
+      hostEl.addEventListener('pointerleave', onLeave, { passive: true });
+    } else {
+      // Navbar mode: hover on links
+      const links = hostEl.querySelectorAll('a');
+      if (links.length) {
+        const linkEnter = (e) => {
+          state.isHover = true;
+          const r = e.currentTarget.getBoundingClientRect();
+          hostRect = hostEl.getBoundingClientRect();
+          state.hoverX = clamp(((r.left + r.right) / 2 - hostRect.left) / (hostRect.width || 1), 0, 1);
+        };
+        links.forEach(l => {
+          l.addEventListener('mouseenter', linkEnter);
+          l.addEventListener('mouseleave', onLeave);
+        });
+        hostEl.addEventListener('mouseleave', onLeave);
+      } else {
+        hostEl.addEventListener('mouseenter', () => { state.isHover = true; });
+        hostEl.addEventListener('mouseleave', onLeave);
+      }
+    }
+
+    // Touch support
+    if (isTouch) {
+      hostEl.addEventListener('touchstart', () => { state.isHover = true; }, { passive: true });
+      hostEl.addEventListener('touchend', () => { setTimeout(() => { state.isHover = false; }, 150); }, { passive: true });
+    }
+
+    // ResizeObserver with debounce
+    let resizeTimer = null;
+    const ro = new ResizeObserver(() => {
+      if (resizeTimer) clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(recalc, 300);
+    });
+    ro.observe(hostEl);
+
+    // Intersection observer for offscreen pause
+    let io = null;
+    if (cfg.pauseOffscreen && 'IntersectionObserver' in window) {
+      io = new IntersectionObserver(([e]) => {
+        isInViewport = e.isIntersecting;
+        if (isInViewport && !unregister) unregister = RafPool.add(step);
+        else if (!isInViewport && unregister) { unregister(); unregister = null; }
+      }, { threshold: 0 });
+      io.observe(hostEl);
+    }
+
+    // Visibility handling
+    const onVis = () => {
+      if (document.hidden && unregister) { unregister(); unregister = null; }
+      else if (!document.hidden && isInViewport && !unregister) unregister = RafPool.add(step);
+    };
+    document.addEventListener('visibilitychange', onVis);
+
+    // Start
+    recalc();
+    unregister = RafPool.add(step);
+    initInProgress.delete(strokeHost);
+
+    // Cleanup function
+    const cleanup = () => {
+      disposed = true;
+      if (unregister) unregister();
+      if (io) io.disconnect();
+      ro.disconnect();
+      document.removeEventListener('visibilitychange', onVis);
+      injected.remove();
+      cleanupMap.delete(strokeHost);
+    };
+
+    cleanupMap.set(strokeHost, cleanup);
+    instanceMap.set(hostEl, { recalc, cleanup });
+    return cleanup;
   }
 
-  // Expose global API
-  window.SideRun = window.SideRun || { init };
-
+  // Export
+  const api = { init };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  if (typeof window !== 'undefined') window.SideRun = api;
 })();

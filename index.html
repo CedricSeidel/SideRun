@@ -2,247 +2,110 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-  <!-- Mobile-first viewport + allow content to extend under iOS browser chrome (for background bleed) -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>SideRun Animation System</title>
-  <meta name="description" content="SideRun — a lightweight JavaScript + CSS flying-border 'runner' effect with an animated stroke and blurred backdrop that follows hover or pointer input." />
-  <meta property="og:title" content="SideRun — flying border runner (JS + CSS)" />
-  <meta property="og:description" content="A tiny front-end effect that draws an animated border and blurred backdrop. Easy to drop into navs, logos, and content cards." />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://example.com/siderun" />
-  <meta property="og:image" content="https://example.com/og-siderun.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>SideRun — Animated Hover Borders</title>
+    <meta name="description" content="SideRun — Lightweight JavaScript library for animated flying border effects that follow your cursor." />
+    <meta property="og:title" content="SideRun — Animated Hover Borders" />
+    <meta property="og:description" content="Lightweight JS library for flying border effects. No dependencies, ~5kb." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://pvuljvcob.github.io/SideRun" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <!-- Tailwind via CDN for utility classes used in mobile nav (kept minimal and scoped) -->
-  <script>
-    window.tailwind = window.tailwind || {};
-    window.tailwind.config = {
-      corePlugins: { preflight: false } // keep existing CSS untouched
-    };
-  </script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="./styles/navbar.css" />
-  <link rel="stylesheet" href="./styles/siderun.css" />
-  <link rel="stylesheet" href="./styles/hero.css" />
-  <link rel="stylesheet" href="./styles/scrolleffects.css" />
-  <link rel="stylesheet" href="./styles/main.css" />
-  <link rel="stylesheet" href="./styles/responsive.css" />
-  <!-- End Tailwind setup -->
+    <link href="https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles/siderun.css" />
+    <link rel="stylesheet" href="./styles/main.css" />
   </head>
-  <body>
-    <nav class="site-nav text-s-strong siderun" aria-label="Primary">
-      <div class="sr-navbar__blur"></div>
-      <div class="site-nav__stroke siderun"></div>
-  <div id="site-nav-links" class="site-nav__links siderun">
-        <a class="hero__eyebrow site-nav__link siderun">SideRun</a>
-        <a href="#hero" class="site-nav__link siderun">Home</a>
-        <a href="#siderun-demos" class="site-nav__link siderun">Demos</a>
-        <a href="#overview" class="site-nav__link siderun">Overview</a>
-        <a href="https://github.com/PVULJVCOB/SideRun" class="site-nav__link siderun" target="_blank" rel="noopener noreferrer">GitHub</a>
-      </div>
-      <button class="site-nav__button siderun" aria-label="Open menu" aria-expanded="false" type="button">
-        <!-- Accessible hamburger icon (three bars) -->
-        <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <rect x="3" y="6" width="18" height="2" rx="1" />
-          <rect x="3" y="11" width="16" height="2" rx="1" />
-          <rect x="3" y="16" width="14" height="2" rx="1" />
-        </svg>
-      </button>
-    </nav>
-
-  <!-- Hero: -->
-  <header id="hero" class="hero" role="banner" aria-label="Intro">
+  <body class="single-page">
+    <!-- Grid Background -->
     <div class="hero-parallax" aria-hidden="true">
       <div class="hero-parallax__grid"></div>
-      <div class="hero-parallax__layer" data-depth="0.12"></div>
-      <div class="hero-parallax__layer" data-depth="0.18"></div>
-      <div class="hero-parallax__layer" data-depth="0.05"></div>
-    </div>
-    <div class="hero__inner">
-      <div class="hero__eyebrow" data-scroll="fade-up">SideRun</div>
-        <h1 class="hero__title" data-scroll="fade-up">SideRun Animation System</h1>
-        <p class="hero__subtitle" data-scroll="fade-up">Lightweight JavaScript library for animated hover borders that follow mouse movement. Add interactive flying border effects to any element with smooth animations and performance optimization.</p>
-      <div class="hero__actions" data-scroll="fade-up">
-        <a class="hero__cta" href="#siderun-demos">View Features</a>
-  <a class="hero__cta" href="./dist/siderun.zip" download>Download SideRun (zip)</a>
-        <a class="hero__cta" href="https://github.com/PVULJVCOB/SideRun" target="_blank" rel="noopener">GitHub</a>
-      </div>
     </div>
 
-    <!-- Scroll hint -->
-    <div class="hero__scroll-indicator" aria-hidden="true" data-scroll="fade-up" data-scroll-once>
-      <span class="hero__scroll-dot" aria-hidden="true"></span>
-  <span>Scroll for more</span>
-    </div>
-  </header>
-
-  <main>
-  <section id="siderun-demos" class="scroll-section" aria-label="SideRun Showcase">
-        <!-- Block: Demos -->
-        <div class="block">
-          <div class="sr-grid two" data-scroll="fade-up" data-stagger-base="80">
-            <div class="glass-card" data-scroll="fade-up" data-stagger-child>
-              <h3 class="hero__eyebrow" data-scroll="fade-up">SideRun</h3>
-              <div id="siderun" class="sr-container glass-bg demo-siderun" style="margin-top:17px">
-                <div class="site-nav__stroke siderun"></div>
-                <div class="glass-card__content">
-                  <p class="text-m" data-scroll="fade-up">Hover to see the animated border effect that follows your mouse. The border smoothly animates around the element with customizable speed, color, and radius.</p>
-                </div>
-              </div>
-              <div class="sr-code" aria-label="Code: init (siderun)" data-scroll="fade-up">
-              <pre><code>// HTML host needs a stroke container
-&lt;div id="siderun" class="sr-container glass-bg"&gt;
-  &lt;div class="site-nav__stroke siderun"&gt;&lt;/div&gt;
-  ...
-&lt;/div&gt;
-
-// JS init (siderun: hover-driven, like the logo)
-SideRun.init(document.getElementById('siderun'), {
-  radius: 12,
-  tail: 14,
-  margin: 11
-});
-</code></pre>
-            </div>
-            </div>
-
-            <!-- Demo: Pointer Tracking -->
-            <div class="glass-card" data-scroll="fade-up" data-stagger-child>
-              <h3 class="hero__eyebrow" data-scroll="fade-up">Pointer Tracking</h3>
-              <div id="siderun-follow" class="sr-container glass-bg demo-siderun-follow" style="margin-top:17px">
-                <div class="site-nav__stroke siderun"></div>
-                <div class="glass-card__content">
-                  <p class="text-m" data-scroll="fade-up">Move the cursor — the siderun-follow tracks the pointer smoothly. Toggle <code>trackPointer</code> to enable direct pointer tracking.</p>
-                </div>
-              </div>
-              <div class="sr-code" aria-label="Code: init (siderun-follow)" data-scroll="fade-up">
-              <pre><code>// HTML host needs a stroke container
-&lt;div id="siderun-follow" class="sr-container glass-bg"&gt;
-  &lt;div class="site-nav__stroke siderun"&gt;&lt;/div&gt;
-  ...
-&lt;/div&gt;
-
-// JS init (siderun-follow: cursor tracking)
-SideRun.init(document.getElementById('siderun-follow'), {
-  radius: 12,
-  tail: 18,
-  margin: 11,
-  trackPointer: true,
-  ease: 0.08
-});
-</code></pre>
-              </div>
-            </div>
+    <!-- Single Page Layout -->
+    <main class="page-container">
+      <!-- Left: Hero + Info -->
+      <section class="page-left">
+        <header class="hero-compact">
+          <div class="hero__eyebrow">SideRun</div>
+          <h1 class="hero__title">Animated<br>Hover Borders</h1>
+          <p class="hero__subtitle">Lightweight JS library for flying border effects that follow your cursor.</p>
+        </header>
+        
+        <div class="quick-info">
+          <a id="btn-download" href="./dist/siderun.zip" class="info-btn siderun" download>
+            <div class="site-nav__stroke siderun"></div>
+            <span>Download</span>
+          </a>
+          <div class="info-item">
+            <span class="info-label">Size</span>
+            <span class="info-value">~5kb</span>
           </div>
-        </div>
-
-        <!-- Block: Overview -->
-        <div class="block" id="overview">
-          <div class="sr-grid two" data-scroll="fade-up" data-stagger-base="95">
-            <div class="glass-card" data-scroll="fade-left" data-stagger-child data-stagger-base="80">
-              <div class="sr-eyebrow" data-scroll="fade-up" data-stagger-child>SIDERUN</div>
-              <h2 class="sr-title" data-scroll="fade-up" data-stagger-child>lightweight</h2>
-              <p class="sr-subtitle" data-scroll="fade-up" data-stagger-child>A tiny JS runtime plus companion CSS that provides a running border and blurred backdrop. Designed for predictable visuals and easy theming.</p>
-
-              <div class="sr-code" aria-label="Quickstart example" data-scroll="fade-up" data-stagger-child>
-              <pre><code>// Front-end quickstart
-// Easiest: copy files from `SideRun/` (siderun.js, siderun.css)
-// or copy these two files directly from the `SideRun/` folder in this repo.
-
-// HTML host needs a stroke container
-&lt;div id="siderun" class="sr-container glass-bg"&gt;
-  &lt;div class="site-nav__stroke siderun"&gt;&lt;/div&gt;
-  &lt;!-- content --&gt;
-&lt;/div&gt;
-
-// JS init (siderun)
-SideRun.init(document.getElementById('siderun'), {
-  radius: 12,
-  tail: 14,
-  margin: 11
-});
-</code></pre>
-              </div>
-
-              <p data-scroll="fade-up" data-stagger-child>
-                <a class="hero__cta" href="https://github.com/PVULJVCOB/SideRun" target="_blank" rel="noopener">View on GitHub</a>
-              </p>
-            </div>
-            <div class="glass-card" data-scroll="fade-right" data-stagger-child data-stagger-base="70">
-              <h3 class="sr-title" style="font-size:clamp(22px,3.2vw,32px)" data-scroll="fade-up" data-stagger-child>Modern Architecture</h3>
-              <ul data-stagger-base="70">
-                <li data-scroll="fade-up" data-stagger-child><strong>CSS Token System:</strong> Full control through custom properties with responsive scaling.</li>
-                <li data-scroll="fade-up" data-stagger-child><strong>3-Layer Design:</strong> Separates blur effects, border animations, and interactive content.</li>
-                <li data-scroll="fade-up" data-stagger-child><strong>Touch Optimized:</strong> Automatic device detection with proper touch feedback and hover cleanup.</li>
-                <li data-scroll="fade-up" data-stagger-child><strong>Responsive Design:</strong> Seamless desktop-to-mobile transitions with safe-area support.</li>
-              </ul>
-              <br/>
-              <p class="sr-subtitle" data-scroll="fade-up" data-stagger-child >Accessibility: Full keyboard navigation, screen reader support, and respects reduced-motion preferences. GPU-accelerated for smooth performance.</p>
-            </div>
+          <div class="info-item">
+            <span class="info-label">License</span>
+            <span class="info-value">MIT</span>
           </div>
-        </div>
-
-        <!-- Block: Details -->
-        <div class="block">
-          <div class="sr-grid three" data-scroll="fade-up" data-stagger-base="70">
-            <div class="glass-card" data-scroll="fade-up" data-stagger-child data-stagger-base="60">
-              <h4 class="sr-title" style="font-size:22px" data-scroll="fade-up" data-stagger-child>Features</h4>
-              <p data-scroll="fade-up" data-stagger-child>Lightweight flying border - responsive design, touch optimization, CSS tokens, accessibility features, and GPU-accelerated animations. Perfect for interactive elements.</p>
-            </div>
-            <div class="glass-card" data-scroll="fade-up" data-stagger-child data-stagger-base="60">
-              <h4 class="sr-title" style="font-size:22px" data-scroll="fade-up" data-stagger-child>Quick Start</h4>
-              <p data-scroll="fade-up" data-stagger-child>Copy <code>siderun.js</code> and <code>siderun.css</code>. Add a host container (e.g., <code>div.sr-container</code>) with a child <code>.site-nav__stroke.siderun</code>, then initialize the host with <code>SideRun.init(host)</code>. Customize via options.</p>
-            </div>
-            <div class="glass-card" data-scroll="fade-up" data-stagger-child data-stagger-base="60">
-              <h4 class="sr-title" style="font-size:22px" data-scroll="fade-up" data-stagger-child>Documentation</h4>
-              <p data-scroll="fade-up" data-stagger-child>Complete guides available: <strong>README.md</strong> for setup and usage examples, plus inline JSDoc comments in the source code.</p>
-            </div>
-          </div>
+          <a id="btn-github" href="https://github.com/PVULJVCOB/SideRun" class="info-btn siderun" target="_blank" rel="noopener">
+            <div class="site-nav__stroke siderun"></div>
+            <span>GitHub</span>
+          </a>
         </div>
       </section>
 
-      <!-- React root for Mobile Navigation (mounted only on small screens via CSS) -->
-      <div id="mobile-nav-root" class="md:hidden"></div>
+      <!-- Right: Demo -->
+      <section class="page-right">
+        <div id="siderun" class="demo-box siderun" onclick="toggleDemoView()">
+          <div class="site-nav__stroke siderun"></div>
+          
+          <!-- View 1: Code (default) -->
+          <div class="demo-view demo-view--code active">
+            <code class="demo-code">SideRun.init(element, {<br>&nbsp;&nbsp;margin: 11,<br>&nbsp;&nbsp;trackPointer: true,<br>&nbsp;&nbsp;ease: 0.08<br>});</code>
+            <p class="demo-hint">Click for setup guide →</p>
+          </div>
+          
+          <!-- View 2: Instructions -->
+          <div class="demo-view demo-view--guide">
+            <div class="guide-steps">
+              <div class="guide-step"><span class="step-num">1</span> Add <code>siderun.js</code> + <code>siderun.css</code></div>
+              <div class="guide-step"><span class="step-num">2</span> Add class <code>.siderun</code> to element</div>
+              <div class="guide-step"><span class="step-num">3</span> Add <code>&lt;div class="site-nav__stroke siderun"&gt;&lt;/div&gt;</code> inside</div>
+              <div class="guide-step"><span class="step-num">4</span> Call <code>SideRun.init(element, options)</code></div>
+            </div>
+            <p class="demo-hint">← Click to see code</p>
+          </div>
+        </div>
+      </section>
+    </main>
 
+    <!-- Footer -->
+    <footer class="page-footer">
+      <span>© 2025 SideRun</span>
+      <a href="https://github.com/PVULJVCOB/SideRun" target="_blank" rel="noopener">GitHub</a>
+    </footer>
+
+  <!-- Scripts -->
   <script defer src="./js/siderun.js"></script>
-  <script defer src="./js/navbar.js"></script>
-  <!-- Parallax & scroll effects: lazy-load after initial render to reduce main-thread work -->
+  
   <script>
-    (function(){
-      function loadScript(src){ var s=document.createElement('script'); s.src=src; s.defer=true; document.body.appendChild(s); }
-      function loadDeferred(){
-        loadScript('./js/hero-parallax.js');
-        loadScript('./js/scroll-effects.js');
-      }
-      if ('requestIdleCallback' in window) {
-        requestIdleCallback(loadDeferred, {timeout: 2000});
-      } else {
-        window.addEventListener('load', loadDeferred);
-      }
-    })();
+    window.addEventListener('DOMContentLoaded', () => {
+      if (!window.SideRun) return;
+      
+      // Initialize demo box
+      const demo = document.getElementById('siderun');
+      if (demo) SideRun.init(demo, { margin: 11, trackPointer: true, ease: 0.08 });
+      
+      // Initialize buttons (no tracking = centered animation)
+      const btnDownload = document.getElementById('btn-download');
+      const btnGithub = document.getElementById('btn-github');
+      if (btnDownload) SideRun.init(btnDownload, { margin: 8, trackPointer: false, ease: 0.1 });
+      if (btnGithub) SideRun.init(btnGithub, { margin: 8, trackPointer: false, ease: 0.1 });
+    });
+    
+    function toggleDemoView() {
+      const codeView = document.querySelector('.demo-view--code');
+      const guideView = document.querySelector('.demo-view--guide');
+      codeView.classList.toggle('active');
+      guideView.classList.toggle('active');
+    }
   </script>
-  <script crossorigin defer src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin defer src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script>if(document.location){var s=document.createElement('script');s.defer=true;s.src='./dist/js/navbar.js';s.onerror=function(){var f=document.createElement('script');f.defer=true;f.src='./js/navbar.js';document.body.appendChild(f)};document.body.appendChild(s);}</script>
-  <script>if(document.location){var s=document.createElement('script');s.defer=true;s.src='./dist/js/siderun.js';s.onerror=function(){var f=document.createElement('script');f.defer=true;f.src='./js/siderun.js';document.body.appendChild(f)};document.body.appendChild(s);}</script>
-  <script>if(document.location){var s=document.createElement('script');s.defer=true;s.src='./dist/js/hero-parallax.js';s.onerror=function(){var f=document.createElement('script');f.defer=true;f.src='./js/hero-parallax.js';document.body.appendChild(f)};document.body.appendChild(s);}</script>
-  <script>if(document.location){var s=document.createElement('script');s.defer=true;s.src='./dist/js/scroll-effects.js';s.onerror=function(){var f=document.createElement('script');f.defer=true;f.src='./js/scroll-effects.js';document.body.appendChild(f)};document.body.appendChild(s);}</script>
-    <script>
-  // Initialize SideRun on demo elements when DOM is ready
-      window.addEventListener('DOMContentLoaded', () => {
-        if (!window.SideRun) return;
-  // Demos
-  const demoSiderun = document.getElementById('siderun');
-  const demoSiderunFollow = document.getElementById('siderun-follow');
-  if (demoSiderun) SideRun.init(demoSiderun, { radius: 12, tail: 14, margin: 11 });
-  if (demoSiderunFollow) SideRun.init(demoSiderunFollow, { radius: 12, tail: 18, margin: 11, trackPointer: true, ease: 0.08 });
-      });
-    </script>
-
-  <!-- Footer -->
-  <footer class="site-footer" role="contentinfo" style="padding:24px 22px 40px; text-align:center; opacity:.8">
-  <div class="hero__eyebrow">© 2025 SideRun — All rights reserved.</div>
-  </footer>
   </body>
   </html>
