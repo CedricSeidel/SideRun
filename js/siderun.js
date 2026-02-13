@@ -183,8 +183,15 @@
       b.se = -perim * 0.5 - metrics.widthSpan - arcQ + metrics.head;
       b.wrap = b.se + perim;
 
-      primary.eased = primary.target = b.ps;
-      secondary.eased = secondary.target = b.ss;
+      // Only set eased values on initial call, otherwise preserve smooth animation
+      if (primary.target === 0 && secondary.target === 0) {
+        primary.eased = primary.target = b.ps;
+        secondary.eased = secondary.target = b.ss;
+      } else {
+        // Just update targets, let easing catch up
+        primary.target = state.isHover ? mix(b.ps, b.pe, clamp(state.hoverX, 0, 1)) : b.ps;
+        secondary.target = state.isHover ? mix(b.se, b.ss, clamp(state.hoverX, 0, 1)) : b.ss;
+      }
       applyDashes();
     }
 
@@ -263,8 +270,13 @@
     const onLeave = () => { state.isHover = false; };
 
     // Attach events
-    const isTouch = 'ontouchstart' in window;
+    const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     if (cfg.trackPointer && !isTouch) {
+      hostEl.addEventListener('pointerenter', onEnter, { passive: true });
+      hostEl.addEventListener('pointermove', onMove, { passive: true });
+      hostEl.addEventListener('pointerleave', onLeave, { passive: true });
+    } else if (cfg.trackPointer && isTouch) {
+      // Touch devices with pointer tracking - also listen to pointer events for hybrid devices
       hostEl.addEventListener('pointerenter', onEnter, { passive: true });
       hostEl.addEventListener('pointermove', onMove, { passive: true });
       hostEl.addEventListener('pointerleave', onLeave, { passive: true });
@@ -289,10 +301,53 @@
       }
     }
 
-    // Touch support
+    // Touch support with finger tracking - always active on touch devices
     if (isTouch) {
-      hostEl.addEventListener('touchstart', () => { state.isHover = true; }, { passive: true });
-      hostEl.addEventListener('touchend', () => { setTimeout(() => { state.isHover = false; }, 150); }, { passive: true });
+      const updateFromTouch = (e) => {
+        const touch = e.touches[0];
+        if (!touch) return;
+        hostRect = hostEl.getBoundingClientRect();
+        // Calculate touch position relative to element
+        const x = clamp((touch.clientX - hostRect.left) / (hostRect.width || 1), 0, 1);
+        const y = clamp((touch.clientY - hostRect.top) / (hostRect.height || 1), 0, 1);
+        // Only update if touch is within element bounds (with some tolerance)
+        const isInBounds = touch.clientX >= hostRect.left - 20 && 
+                          touch.clientX <= hostRect.right + 20 &&
+                          touch.clientY >= hostRect.top - 20 && 
+                          touch.clientY <= hostRect.bottom + 20;
+        if (isInBounds) {
+          state.hoverX = x;
+          state.hoverY = y;
+        }
+        return isInBounds;
+      };
+      
+      hostEl.addEventListener('touchstart', (e) => {
+        // First update position, then set hover state to ensure smooth transition
+        const inBounds = updateFromTouch(e);
+        if (inBounds) {
+          state.isHover = true;
+        }
+      }, { passive: true });
+      
+      hostEl.addEventListener('touchmove', (e) => {
+        if (state.isHover) {
+          const inBounds = updateFromTouch(e);
+          // If finger moves out of bounds, gradually release
+          if (!inBounds) {
+            state.isHover = false;
+          }
+        }
+      }, { passive: true });
+      
+      hostEl.addEventListener('touchend', () => {
+        // Slightly delayed release for smoother animation back to rest
+        setTimeout(() => { state.isHover = false; }, 100);
+      }, { passive: true });
+      
+      hostEl.addEventListener('touchcancel', () => {
+        state.isHover = false;
+      }, { passive: true });
     }
 
     // ResizeObserver with debounce
