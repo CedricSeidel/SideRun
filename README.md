@@ -17,8 +17,8 @@ Lightweight JavaScript + CSS library for animated flying border effects.
 Download from the [dist folder](./dist) or copy the files:
 
 ```bash
-curl -O https://raw.githubusercontent.com/PVULJVCOB/SideRun/main/dist/siderun.js
-curl -O https://raw.githubusercontent.com/PVULJVCOB/SideRun/main/dist/siderun.css
+curl -O https://raw.githubusercontent.com/cedricseidel/SideRun/main/dist/siderun.js
+curl -O https://raw.githubusercontent.com/cedricseidel/SideRun/main/dist/siderun.css
 ```
 
 ## Quick Start
