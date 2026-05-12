@@ -2,7 +2,7 @@
 
 Lightweight JavaScript + CSS library for animated flying border effects.
 
-![SideRun Demo](https://img.shields.io/badge/version-2.2.0-orange) ![License](https://img.shields.io/badge/license-MIT-blue) ![Size](https://img.shields.io/badge/size-~5kb-green)
+[![Version](https://img.shields.io/badge/version-2.2.0-orange)](https://github.com/CedricSeidel/SideRun/releases) [![License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE) [![Size](https://img.shields.io/badge/size-~5kb-green)](./dist) [![Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://CedricSeidel.github.io/SideRun)
 
 ## Features
 
@@ -17,8 +17,8 @@ Lightweight JavaScript + CSS library for animated flying border effects.
 Download from the [dist folder](./dist) or copy the files:
 
 ```bash
-curl -O https://raw.githubusercontent.com/PVULJVCOB/SideRun/main/dist/siderun.js
-curl -O https://raw.githubusercontent.com/PVULJVCOB/SideRun/main/dist/siderun.css
+curl -O https://raw.githubusercontent.com/CedricSeidel/SideRun/main/dist/siderun.js
+curl -O https://raw.githubusercontent.com/CedricSeidel/SideRun/main/dist/siderun.css
 ```
 
 ## Quick Start
@@ -102,4 +102,4 @@ MIT © 2025 Cedric Seidel
 
 ---
 
-[Demo](https://pvuljvcob.github.io/SideRun) · [Download](./dist/siderun.zip) · [GitHub](https://github.com/PVULJVCOB/SideRun)
+[Demo](https://CedricSeidel.github.io/SideRun) · [Download](./dist/siderun.zip) · [GitHub](https://github.com/CedricSeidel/SideRun)
