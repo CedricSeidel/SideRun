@@ -102,4 +102,4 @@ MIT © 2025 Cedric Seidel
 
 ---
 
-[Demo](https://pvuljvcob.github.io/SideRun) · [Download](./dist/siderun.zip) · [GitHub](https://github.com/PVULJVCOB/SideRun)
+[Demo](https://cedricseidel.github.io/SideRun) · [Download](./dist/siderun.zip) · [GitHub](https://github.com/cedricseidel/SideRun)
